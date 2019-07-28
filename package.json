@@ -1,0 +1,54 @@
+{
+	"name": "@fazor/socket.io-client",
+	"version": "0.0.1",
+	"description": "a fazor container component for socket.io",
+	"main": "dist/index.js",
+	"devDependencies": {
+		"@babel/cli": "^7.5.0",
+		"@babel/core": "^7.5.4",
+		"@babel/plugin-proposal-object-rest-spread": "^7.5.4",
+		"@babel/plugin-transform-async-to-generator": "^7.5.0",
+		"@babel/preset-env": "^7.5.4"
+	},
+	"dependencies": {
+		"@babel/plugin-syntax-jsx": "^7.2.0",
+		"@babel/plugin-transform-react-display-name": "^7.2.0",
+		"@babel/plugin-transform-react-jsx": "^7.3.0",
+		"@babel/plugin-transform-react-jsx-self": "^7.2.0",
+		"@babel/plugin-transform-react-jsx-source": "^7.5.0",
+		"@babel/polyfill": "^7.4.4",
+		"react": "^16.8.6",
+		"react-dom": "^16.8.6",
+		"socket.io-client": "^2.2.0"
+	},
+	"scripts": {
+		"build": "rm -rf dist && npx babel src -d dist && cp package.json dist",
+		"publish-patch": "npm run build && npm version patch && npm publish && git push",
+		"publish-minor": "npm run build && npm version minor && npm publish && git push",
+		"publish-major": "npm run build && npm version major && npm publish && git push"
+	},
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/ironman9967/fazor_socket.io-client.git"
+	},
+	"author": "Tyson Hester",
+	"license": "ISC",
+	"bugs": {
+		"url": "https://github.com/ironman9967/fazor_socket.io-client/issues"
+	},
+	"homepage": "https://github.com/ironman9967/fazor_socket.io-client#readme",
+	"babel": {
+		"presets": [
+			"@babel/preset-env"
+		],
+		"plugins": [
+			"@babel/plugin-syntax-jsx",
+			"@babel/plugin-transform-react-display-name",
+			"@babel/plugin-transform-react-jsx",
+			"@babel/plugin-transform-react-jsx-self",
+			"@babel/plugin-transform-react-jsx-source",
+			"@babel/plugin-proposal-object-rest-spread",
+			"@babel/plugin-transform-async-to-generator"
+		]
+	}
+}
