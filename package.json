@@ -1,6 +1,6 @@
 {
 	"name": "@fazor/socket.io-client",
-	"version": "0.0.1",
+	"version": "0.1.0",
 	"description": "a fazor container component for socket.io",
 	"main": "dist/index.js",
 	"devDependencies": {
