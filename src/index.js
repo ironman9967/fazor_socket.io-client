@@ -182,6 +182,6 @@ export const Socket = ({
 	})
 
 	return (
-		<div> --- Socket --- { children } </div>
+		<div> { children } </div>
 	)
 }
