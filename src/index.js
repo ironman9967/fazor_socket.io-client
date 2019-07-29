@@ -131,7 +131,20 @@ export const Socket = ({
 	})
 	const createListenerAction = listenerType => createAction([
 		`socket${listenerType.substring(0, 1).toUpperCase()}${listenerType.substring(1)}`,
-		(evt, handler, reducer) => listenToServer(listenerType, evt, handler, reducer),
+		(...args) => {
+			const {
+				evt,
+				handler,
+				reducer
+			} = typeof args[0] === 'object'
+				? { evt: args[0].evt, handler: args[0].handler, reducer: args[0].reducer }
+				: typeof args[0] === 'array'
+					? { evt: args[0][0], handler: args[0][1], reducer: args[0][2] }
+					: {}
+			if (evt && handler && reducer) {
+				listenToServer(listenerType, evt, handler, reducer)
+			}
+		},
 		(state, { evt }) => reduceEventListenerState(listenerType, evt, state)
 	])
 	createListenerAction('on')
