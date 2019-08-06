@@ -6,7 +6,7 @@ export const create = (createAction, socket, [ hasEvent, addEvent ]) => {
 		socketEventFromServer
 	}, socket, listener, evt, handler, reducer) => {
 		if (connected && !hasEvent(listener, evt)) {
-			addEvent(evt)
+			addEvent(listener, evt)
 			socket[listener](
 				evt,
 				data => socketEventFromServer(evt, data, handler, reducer)

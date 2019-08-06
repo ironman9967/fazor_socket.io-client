@@ -30,15 +30,22 @@ export const initialState = {
 }
 
 export const createActions = createAction => {
-	const eventListeners = {}
-	const removeAllEvents = () => eventListeners = ({ ...{ on: [], once: [] } })
-	removeAllEvents()
+	const defEvents = () => ({ ...{ on: [], once: [] } })
+	let eventListeners = defEvents()
 	const hasEvent = (listener, evt) => eventListeners[listener].includes(evt)
 	const addEvent = (listener, evt) =>
 		eventListeners[listener] = uniq(eventListeners[listener].concat([ evt ]))
-	const removeEvent = evt => Object.keys(eventListeners).forEach(listener =>
-		eventListeners[listener] = without(eventListeners[listener], evt))
-	[
+	const removeEvent = evt => {
+		eventListeners = Object.keys(eventListeners).reduce((
+			newEventListeners,
+			listener
+		) => {
+			newEventListeners[listener] = without(eventListeners[listener], evt)
+			return newEventListeners
+		}, defEvents())
+	}
+	const removeAllEvents = () => eventListeners = defEvents()
+	const actionCreators = [
 		createClose,
 		createConnecting,
 		createConnectionChange,
@@ -48,7 +55,8 @@ export const createActions = createAction => {
 		createRemoveAllListeners,
 		createRemoveListener,
 		createShouldConnect
-	].forEach(create => create(createAction, socket, [
+	]
+	actionCreators.forEach(create => create(createAction, socket, [
 		hasEvent, addEvent, removeEvent, removeAllEvents
 	]))
 }
