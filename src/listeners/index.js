@@ -1,10 +1,6 @@
 
 export const create = (createAction, socket, [ hasEvent, addEvent ]) => {
-	const listenToServer = ({
-		socket: { connected }
-	}, {
-		socketEventFromServer
-	}, socket, listener, evt, handler, reducer) => {
+	const listenToServer = (connected, socketEventFromServer, socket, listener, evt, handler, reducer) => {
 		if (connected && !hasEvent(listener, evt)) {
 			addEvent(listener, evt)
 			socket[listener](
@@ -23,18 +19,18 @@ export const create = (createAction, socket, [ hasEvent, addEvent ]) => {
 		}`
 		createAction([
 			listenerName,
-			(state, actions, ...args) => {
+			(connected, socketEventFromServer, ...args) => {
 				const {
 					evt,
 					handler = () => ({}),
-					reducer = state => ({ ...state })
+					reducer
 				} = Array.isArray(args[0])
 					? { evt: args[0][0], handler: args[0][1], reducer: args[0][2] }
 					: typeof args[0] === 'object'
 						? { evt: args[0].evt, handler: args[0].handler, reducer: args[0].reducer }
 						: { evt: args[0], handler: args[1], reducer: args[2] }
-				if (evt && handler && reducer) {
-					return listenToServer(state, actions, socket, listenerType, evt, handler, reducer)
+				if (evt && handler) {
+					return listenToServer(connected, socketEventFromServer, socket, listenerType, evt, handler, reducer)
 				}
 				throw new Error(`you must pass ${listenerName} action state, actions`
 					+ ` and an object, an array or arguments containing 'evt', 'handler'`

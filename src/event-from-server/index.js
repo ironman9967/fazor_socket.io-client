@@ -4,11 +4,11 @@ export const create = createAction => createAction([
 	async (evt, data, handler, reducer) => {
 		const result = await handler(data)
 		return result
-			? { evt, reducer, ...result }
+			? { reducer, result }
 			: false
 	},
-	(preState, { reducer, ...action }) => ({
+	(preState, { reducer, result }) => ({
 		...preState,
-		...reducer(preState, action)
+		...reducer(preState, result)
 	})
 ])

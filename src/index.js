@@ -9,6 +9,7 @@ import socketio from 'socket.io-client'
 import { create as createClose } from './close'
 import { create as createConnecting } from './connecting'
 import { create as createConnectionChange } from './connection-change'
+import { create as createEmit } from './emit'
 import { create as createEventFromServer } from './event-from-server'
 import { create as createListeners } from './listeners'
 import { create as createOpen } from './open'
@@ -49,6 +50,7 @@ export const createActions = createAction => {
 		createClose,
 		createConnecting,
 		createConnectionChange,
+		createEmit,
 		createEventFromServer,
 		createListeners,
 		createOpen,
@@ -64,7 +66,7 @@ export const createActions = createAction => {
 export const Socket = ({ getFaze }) => {
 	const [ state, actions ] = getFaze()
 	const { socket: { connect, connecting, connected } } = state
-	const { socketOpen, socketClose, socketOn } = actions
+	const { socketOpen, socketClose, socketOn, socketEventFromServer } = actions
 
 	if (connect) {
 		if (!connected) {
@@ -73,7 +75,7 @@ export const Socket = ({ getFaze }) => {
 			}
 		}
 		else {
-			socketOn(state, actions, [
+			socketOn(connected, socketEventFromServer, [
 				'fazor_socket.io-client_ping',
 				data => data,
 				({ socket, ...state }, { id, now: lastPing }) => ({
