@@ -1,23 +1,9 @@
 
-export const create = createAction => createAction([
+export const create = (createAction, socket, [ , , remove ]) => createAction([
 	'socketRemoveListener',
-	(socket, evt) => {
+	evt => {
+		remove(evt)
 		socket.removeListener(evt)
 		return { evt }
-	},
-	({ socket: { eventListeners: el, ...socket }, ...state }, { evt }) => ({
-		...state,
-		socket: {
-			...socket,
-			eventListeners: Object.keys(el).reduce((nel, type) => {
-				nel[type] = el[type].reduce((nelType, e) => {
-					if (e !== evt) {
-						nelType.push(e)
-					}
-					return nelType
-				}, [])
-				return nel
-			}, {})
-		}
-	})
+	}
 ])

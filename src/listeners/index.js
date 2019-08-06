@@ -1,20 +1,12 @@
 
-import uniq from 'lodash.uniq'
-
-export const create = (createAction, socket) => {
-
-	const eventListeners = {
-		on: [],
-		once: []
-	}
-
+export const create = (createAction, socket, [ hasEvent, addEvent ]) => {
 	const listenToServer = ({
 		socket: { connected }
 	}, {
 		socketEventFromServer
 	}, socket, listener, evt, handler, reducer) => {
-		if (connected && !eventListeners[listener].includes(evt)) {
-			eventListeners[listener] = uniq(eventListeners[listener].concat([ evt ]))
+		if (connected && !hasEvent(listener, evt)) {
+			addEvent(evt)
 			socket[listener](
 				evt,
 				data => socketEventFromServer(evt, data, handler, reducer)
