@@ -36,9 +36,9 @@ export const create = (createAction, socket, [ hasEvent, addEvent ]) => {
 				if (evt && handler && reducer) {
 					return listenToServer(state, actions, socket, listenerType, evt, handler, reducer)
 				}
-				throw new Error(`you must pass ${listenerName} action an object, `
-					+ `an array or arguments containing 'evt', 'handler' and `
-					+ `'reducer' - received ${JSON.stringify.apply(null, args)}`)
+				throw new Error(`you must pass ${listenerName} action state, actions`
+					+ ` and an object, an array or arguments containing 'evt', 'handler'`
+					+ ` and 'reducer' - received ${JSON.stringify.apply(null, args)}`)
 			}
 		])
 	}
