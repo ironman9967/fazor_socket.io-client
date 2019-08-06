@@ -1,200 +1,72 @@
 
-import React, { useEffect } from 'react'
+import React from 'react'
 
 import socketio from 'socket.io-client'
 
+import { create as createClose } from './close'
+import { create as createConnecting } from './connecting'
+import { create as createConnectionChange } from './connection-change'
+import { create as createEventFromServer } from './event-from-server'
+import { create as createListeners } from './listeners'
+import { create as createOpen } from './open'
+import { create as createRemoveAllListeners } from './remove-all-listeners'
+import { create as createRemoveListener } from './remove-listener'
+import { create as createShouldConnect } from './should-connect'
+
 const socket = socketio(undefined, { autoConnect: false })
 
-export const socketInitialState = {
+export const initialState = {
 	socket: {
+		id: void 0,
+		lastPing: void 0,
 		connected: false,
 		connect: true,
 		connecting: false,
-		reconnectDelay: 5000,
-		eventListeners: {
-			once: [],
-			on: []
-		}
+		reconnectDelay: 5000
 	}
 }
 
-export const Socket = ({
-	useFaze,
-	createAction,
-	children
-}) => {
-	const [ getState, getActions ] = useFaze()
+export const createActions = createAction => {
+	[
+		createClose,
+		createConnecting,
+		createConnectionChange,
+		createEventFromServer,
+		createListeners,
+		createOpen,
+		createRemoveAllListeners,
+		createRemoveListener,
+		createShouldConnect
+	].forEach(create => create(createAction, socket))
+}
 
-	createAction([
-		'socketConnectionChange',
-		connected => ({ connected }),
-		(state, { connected }) => ({
-			...state,
-			socket: { ...state.socket, connected, connecting: false }
-		})
-	])
-	createAction([
-		'socketConnecting',
-		connecting => ({ connecting }),
-		(state, { connecting }) => ({
-			...state,
-			socket: { ...state.socket, connecting }
-		})
-	])
-	createAction([
-		'socketOpen',
-		() => {
-			const { socket: { reconnectDelay } } = getState()
-			const {
-				socketConnectionChange,
-				socketConnecting,
-				// socketRemoveAllListeners
-			} = getActions()
-			// socketRemoveAllListeners()
-			const t = setTimeout(() => {
-				// socketRemoveAllListeners()
-				socketConnecting(false)
-			}, reconnectDelay)
-			socket.once('connect', () => {
-				clearTimeout(t)
-				socketConnectionChange(true)
-			})
-			socket.once('disconnect', () => socketConnectionChange(false))
-			socket.open()
-		},
-		state => ({ ...state, socket: { ...state.socket, connecting: true } })
-	])
-	createAction([
-		'socketClose',
-		() => socket.close(),
-		state => ({ ...state, socket: { ...state.socket, connecting: false } })
-	])
-	createAction([
-		'socketShouldConnect',
-		connect => ({ connect }),
-		(state, { connect }) => ({ ...state, socket: { ...state.socket, connect } })
-	])
-	createAction([
-		'socketEventFromServer',
-		(evt, args, handler, reducer) => ({ evt, reducer, ...handler(args) }),
-		(state, { reducer, ...action }) => ({
-			...reducer(state, action),
-			socket: {
-				...state.socket,
-				eventListeners: {
-					...state.socket.eventListeners,
-					once: state.socket.eventListeners.once.reduce((once, eventName) => {
-						if (eventName !== action.evt) {
-							once.push(eventName)
-						}
-						return once
-					}, [])
-				}
+export const Socket = ({ getFaze }) => {
+	const [ state, actions ] = getFaze()
+	const { socket: { connect, connecting, connected } } = state
+	const { socketOpen, socketClose, socketOn } = actions
+
+	if (connect) {
+		if (!connected) {
+			if (!connecting) {
+				socketOpen(state, actions, socket)
 			}
-		})
-	])
-
-	const listenToServer = (listener, evt, handler, reducer) => {
-		const { socket: { connected, eventListeners } } = getState()
-		if (connected && !eventListeners[listener].includes(evt)) {
-			socket[listener](
-				evt,
-				(...args) => {
-					const { socketEventFromServer } = getActions()
-					socketEventFromServer(evt, args, handler, reducer)
-				}
-			)
-			return { evt }
 		}
-		return false
+		else {
+			socketOn(state, actions, [
+				'fazor_socket.io-client_ping',
+				data => data,
+				({ socket, ...state }, { id, now: lastPing }) => ({
+					...state,
+					socket: { ...socket, id, lastPing }
+				})
+			])
+		}
 	}
-	const reduceEventListenerState = (listenerType, evt, {
-		socket: { eventListeners, ...socket },
-		...state
-	}) => ({
-		...state,
-		socket: {
-			...socket,
-			eventListeners: {
-				...eventListeners,
-				[listenerType]: [
-					...eventListeners[listenerType].reduce((otherEventListeners, eventName) => {
-						if (!eventName === evt) {
-							otherEventListeners.push(eventName)
-						}
-						return otherEventListeners
-					}, []),
-					evt
-				]
-			}
-		}
-	})
-	const createListenerAction = listenerType => createAction([
-		`socket${listenerType.substring(0, 1).toUpperCase()}${listenerType.substring(1)}`,
-		(...args) => {
-			const {
-				evt,
-				handler,
-				reducer
-			} = typeof args[0] === 'object'
-				? { evt: args[0].evt, handler: args[0].handler, reducer: args[0].reducer }
-				: typeof args[0] === 'array'
-					? { evt: args[0][0], handler: args[0][1], reducer: args[0][2] }
-					: {}
-			if (evt && handler && reducer) {
-				listenToServer(listenerType, evt, handler, reducer)
-			}
-		},
-		(state, { evt }) => reduceEventListenerState(listenerType, evt, state)
-	])
-	createListenerAction('on')
-	createListenerAction('once')
-
-	createAction([
-		'socketRemoveAllListeners',
-		() => { socket.removeAllListeners() },
-		({ socket, ...state }) => ({
-			...state,
-			socket: { ...socket, eventListeners: { on: [], once: [] } }
-		})
-	])
-	createAction([
-		'socketRemoveListener',
-		evt => {
-			socket.removeListener(evt)
-			return { evt }
-		},
-		({ socket: { eventListeners: el, ...socket }, ...state }, { evt }) => ({
-			...state,
-			socket: {
-				...socket,
-				eventListeners: Object.keys(el).reduce((nel, type) => {
-					nel[type] = el[type].reduce((nelType, e) => {
-						if (e !== evt) {
-							nelType.push(e)
-						}
-						return nelType
-					}, [])
-					return nel
-				}, {})
-			}
-		})
-	])
-
-	useEffect(() => {
-		const { socket: { connected, connect, connecting } } = getState()
-		const { socketOpen, socketClose } = getActions()
-		if (connect) {
-			if (!connecting && !connected) {
-				socketOpen()
-			}
-		}
-		else if (connected) {
-			socketClose()
-		}
-	})
+	else if (connected) {
+		socketClose(socket)
+	}
 
 	return (
-		<div> { children } </div>
+		<h5> --- socket</h5>
 	)
 }
