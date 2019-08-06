@@ -67,6 +67,6 @@ export const Socket = ({ getFaze }) => {
 	}
 
 	return (
-		<h5> --- socket</h5>
+		<div />
 	)
 }
