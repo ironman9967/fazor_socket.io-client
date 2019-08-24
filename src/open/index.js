@@ -1,13 +1,12 @@
 
-export const create = (createAction, socket) => createAction([
+export const create = (createAction, socket, getDefListeners) => createAction([
 	'socketOpen',
-	async ({
-		socket: { reconnectDelay }
-	}, {
+	async (
+		reconnectDelay,
 		socketConnecting,
 		socketConnectionChange,
 		socketRemoveAllListeners
-	}) => {
+	) => {
 		socket.removeAllListeners()
 		const t = setTimeout(() => {
 			socketConnecting(false)
@@ -25,7 +24,9 @@ export const create = (createAction, socket) => createAction([
 		...state,
 		socket: {
 			...socket,
-			connecting: true
+			closing: false,
+			connecting: true,
+			listeners: getDefListeners()
 		}
 	})
 ])

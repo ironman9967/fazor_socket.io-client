@@ -1,8 +1,5 @@
 
-import React from 'react'
-
-import uniq from 'lodash.uniq'
-import without from 'lodash.without'
+import React, { useEffect } from 'react'
 
 import socketio from 'socket.io-client'
 
@@ -13,11 +10,12 @@ import { create as createEmit } from './emit'
 import { create as createEventFromServer } from './event-from-server'
 import { create as createListeners } from './listeners'
 import { create as createOpen } from './open'
-import { create as createRemoveAllListeners } from './remove-all-listeners'
-import { create as createRemoveListener } from './remove-listener'
+import { create as createRemoves } from './removes'
 import { create as createShouldConnect } from './should-connect'
 
 const socket = socketio(undefined, { autoConnect: false })
+
+const getDefListeners = () => ({ on: {}, once: {} })
 
 export const initialState = {
 	socket: {
@@ -26,26 +24,13 @@ export const initialState = {
 		connected: false,
 		connect: true,
 		connecting: false,
-		reconnectDelay: 5000
+		closing: false,
+		reconnectDelay: 5000,
+		listeners: getDefListeners()
 	}
 }
 
 export const createActions = createAction => {
-	const defEvents = () => ({ ...{ on: [], once: [] } })
-	let eventListeners = defEvents()
-	const hasEvent = (listener, evt) => eventListeners[listener].includes(evt)
-	const addEvent = (listener, evt) =>
-		eventListeners[listener] = uniq(eventListeners[listener].concat([ evt ]))
-	const removeEvent = evt => {
-		eventListeners = Object.keys(eventListeners).reduce((
-			newEventListeners,
-			listener
-		) => {
-			newEventListeners[listener] = without(eventListeners[listener], evt)
-			return newEventListeners
-		}, defEvents())
-	}
-	const removeAllEvents = () => eventListeners = defEvents()
 	const actionCreators = [
 		createClose,
 		createConnecting,
@@ -54,42 +39,58 @@ export const createActions = createAction => {
 		createEventFromServer,
 		createListeners,
 		createOpen,
-		createRemoveAllListeners,
-		createRemoveListener,
+		createRemoves,
 		createShouldConnect
 	]
-	actionCreators.forEach(create => create(createAction, socket, [
-		hasEvent, addEvent, removeEvent, removeAllEvents
-	]))
+	actionCreators.forEach(create => create(createAction, socket, getDefListeners))
 }
 
 export const Socket = ({ getFaze }) => {
 	const [ state, actions ] = getFaze()
-	const { socket: { connect, connecting, connected } } = state
-	const { socketOpen, socketClose, socketOn, socketEventFromServer } = actions
 
-	if (connect) {
-		if (!connected) {
-			if (!connecting) {
-				socketOpen(state, actions, socket)
+	const {
+		socket: {
+			connect,
+			connected,
+			connecting,
+			closing,
+			reconnectDelay,
+			listeners
+		}
+	} = state
+	const {
+		socketOpen,
+		socketConnecting,
+		socketConnectionChange,
+		socketRemoveAllListeners,
+		socketClose,
+		socketOn,
+		socketEventFromServer
+	} = actions
+
+	useEffect(() => {
+		if (connect) {
+			if (!connected && !connecting) {
+				socketOpen(reconnectDelay, socketConnecting, socketConnectionChange, socketRemoveAllListeners)
 			}
 		}
-		else {
-			socketOn(connected, socketEventFromServer, [
-				'fazor_socket.io-client_ping',
-				data => data,
-				({ socket, ...state }, { id, now: lastPing }) => ({
-					...state,
-					socket: { ...socket, id, lastPing }
-				})
-			])
+		else if (connected && !closing) {
+			socketClose()
 		}
-	}
-	else if (connected) {
-		socketClose(socket)
-	}
+	})
+
+	useEffect(() => {
+		socketOn(connected, socketEventFromServer, listeners, [
+			'fazor_socket.io-client_ping',
+			data => data,
+			({ socket, ...state }, { id, now: lastPing }) => ({
+				...state,
+				socket: { ...socket, id, lastPing }
+			})
+		])
+	})
 
 	return (
-		<div />
+		<div/>
 	)
 }

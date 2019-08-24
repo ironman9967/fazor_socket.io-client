@@ -9,7 +9,8 @@ export const create = createAction => createAction([
 			id: connected ? id : void 0,
 			lastPing: connected ? lastPing : void 0,
 			connected,
-			connecting: false
+			connecting: false,
+			closing: false
 		}
 	})
 ])

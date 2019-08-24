@@ -1,8 +1,8 @@
 
-export const create = createAction => createAction([
+export const create = (createAction, socket) => createAction([
 	'socketClose',
-	socket => socket.close(),
+	() => { socket.close() },
 	({ socket, ...state }) => ({
 		...state,
-		socket: { ...socket, connecting: false } })
+		socket: { ...socket, closing: true, connecting: false } })
 ])
